@@ -1,6 +1,10 @@
 package TCP;
 import java.io.IOException;
 
+import TCP.RDT21.Packet;
+import TCP.RTDBase.RReceiver;
+import TCP.RTDBase.RSender;
+
 /**
  * Implements simulator using rdt2.2 protocol
  * 
@@ -62,23 +66,95 @@ public class RDT22 extends RTDBase {
 		Packet packet = null;
 		@Override
 		public int loop(int myState) throws IOException {
+			String dat;
+			Packet backwardPacket;
 			switch(myState) {
-			    // Your code here
+			case 0:
+				dat = getFromApp(0);
+				packet = new Packet(dat, "0");
+				printSender(myState, 1, packet.data, packet.checksum, packet.seqnum);
+				forward.send(packet);
+				return 1;
+			case 1:
+				backwardPacket = Packet.deserialize(backward.receive());
+				if(backwardPacket.data.equals("ACK") && backwardPacket.checksum.equals(CkSum.genCheck(packet.seqnum+"ACK"))){
+					printSender(myState, 2, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+					return 2;
+				}
+				printSender(myState, 1, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+				forward.send(packet);
+				return 1;
+			case 2:
+				dat = getFromApp(0);
+				packet = new Packet(dat, "1");
+				printSender(myState, 3, packet.data, packet.checksum, packet.seqnum);
+				forward.send(packet);
+				return 3;
+			case 3:
+				backwardPacket = Packet.deserialize(backward.receive());
+				if(backwardPacket.data.equals("ACK") && backwardPacket.checksum.equals(CkSum.genCheck(packet.seqnum+"ACK"))){
+					printSender(myState, 0, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+					return 0;
+				}
+				printSender(myState, 3, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+				forward.send(packet);
+				return 3;
 			}
 			return myState;
 		}
 	}
 
 	/**
-	 * RReceiver Class implementing rdt2.2 protocol
+	 * RReceiver Class implementing rdt2.1 protocol
 	 * @author rms
 	 *
 	 */
 	public class RReceiver22 extends RReceiver {
+		String seqNum="0";
+		String badSeqNum = "1";
 		@Override
 		public int loop(int myState) throws IOException {
+			String dat;
+			Packet packet, confirm;
 			switch (myState) {
-			    // Your code here
+			case 0: 
+				dat = forward.receive();
+				packet = Packet.deserialize(dat);
+				seqNum = packet.seqnum;
+				if(CkSum.checkString(packet.seqnum+packet.data, packet.checksum)){
+					confirm = new Packet("ACK", seqNum);
+					if(seqNum.equals(packet.seqnum)){
+						printRec(0, 1, packet.data, packet.checksum, packet.seqnum, false, false);
+						deliverToApp(packet.data);
+						backward.send(confirm);
+						seqNum="1";
+						badSeqNum="0";
+						return 1;
+					}
+				}
+				confirm = new Packet("ACK", badSeqNum);
+				printRec(0, 0, packet.data, packet.checksum, packet.seqnum, true, false);
+				backward.send(confirm);
+				return 0;
+			case 1:
+				dat = forward.receive();
+				packet = Packet.deserialize(dat);
+				seqNum = packet.seqnum;
+				if(CkSum.checkString(packet.seqnum+packet.data, packet.checksum)){
+					confirm = new Packet("ACK", seqNum);
+					if(seqNum.equals(packet.seqnum)){
+						printRec(1, 0, packet.data, packet.checksum, packet.seqnum, false, false);
+						deliverToApp(packet.data);
+						backward.send(confirm);
+						seqNum="0";
+						badSeqNum="1";
+						return 0;
+					}
+				}
+				confirm = new Packet("ACK", badSeqNum);
+				printRec(1, 1, packet.data, packet.checksum, packet.seqnum, true, false);
+				backward.send(confirm);
+				return 1;
 			}
 			return myState;
 		}

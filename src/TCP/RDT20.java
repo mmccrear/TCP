@@ -1,8 +1,6 @@
 package TCP;
 import java.io.IOException;
 
-import TCP.RDT10.Packet;
-
 /**
  * Implements simulator using rdt2.0 protocol
  * 
@@ -63,13 +61,23 @@ public class RDT20 extends RTDBase {
 			switch(myState) {
 			case 0:
 				String dat = getFromApp(0);
-				Packet packet = new Packet(dat);
-				
+				packet = new Packet(dat);
 				forward.send(packet);
-				while(!Packet.deserialize(backward.receive()).data.equals("ACK")){
-					forward.send(packet);
+				printSender(myState, 1, packet.data, packet.checksum,"");
+				return 1;
+				
+			case 1: 
+				Packet backwardPacket = Packet.deserialize(backward.receive());
+				if(backwardPacket.data.equals("ACK") && CkSum.checkString("ACK", backwardPacket.checksum)){
+					printSender(myState, 0, backwardPacket.data, backwardPacket.checksum, "");
+					return 0;
 				}
+				forward.send(packet);
+				printSender(myState, 1, backwardPacket.data, backwardPacket.checksum, "");
+				return 1;
+				
 			}
+			
 			return myState;						
 		}
 	}
@@ -80,6 +88,7 @@ public class RDT20 extends RTDBase {
 	 *
 	 */
 	public class RReceiver20 extends RReceiver {
+		
 		@Override
 		public int loop(int myState) throws IOException {
 			switch (myState) {
@@ -89,11 +98,13 @@ public class RDT20 extends RTDBase {
 				if(CkSum.checkString(packet.data, packet.checksum)){
 					Packet confirm = new Packet("ACK");
 					deliverToApp(packet.data);
-					
+					printRec(0, 0, packet.data, packet.checksum, "", false, false);
 					backward.send(confirm);
 				}
 				else{
-					backward.send(new Packet("NAK"));
+					Packet confirm = new Packet("NAK");
+					printRec(0, 0, packet.data, packet.checksum, "", true, false);
+					backward.send(confirm);
 				}
 				return 0;
 			}
