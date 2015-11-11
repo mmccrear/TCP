@@ -68,7 +68,7 @@ public class RDT20 extends RTDBase {
 				
 			case 1: 
 				Packet backwardPacket = Packet.deserialize(backward.receive());
-				if(backwardPacket.data.equals("ACK") && CkSum.checkString("ACK", backwardPacket.checksum)){
+				if(backwardPacket.data.equals("ACK") && !backwardPacket.isCorrupt()){
 					printSender(myState, 0, backwardPacket.data, backwardPacket.checksum, "");
 					return 0;
 				}
@@ -95,7 +95,7 @@ public class RDT20 extends RTDBase {
 			case 0:
 				String dat = forward.receive();
 				Packet packet = Packet.deserialize(dat);
-				if(CkSum.checkString(packet.data, packet.checksum)){
+				if(packet.isCorrupt()){
 					Packet confirm = new Packet("ACK");
 					deliverToApp(packet.data);
 					printRec(0, 0, packet.data, packet.checksum, "", false, false);
