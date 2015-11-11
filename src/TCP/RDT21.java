@@ -149,51 +149,35 @@ public class RDT21 extends RTDBase {
 	 *
 	 */
 	public class RReceiver21 extends RReceiver {
-		String seqNum="";
 		@Override
 		public int loop(int myState) throws IOException {
 			String dat;
-			Packet packet, confirm;
+			Packet packet;
 			switch (myState) {
 			case 0: 
 				dat = forward.receive();
 				packet = Packet.deserialize(dat);
-				if(!packet.isCorrupt()){
-					confirm = new Packet("ACK");
-					if(!seqNum.equals(packet.seqnum)){
-						seqNum = packet.seqnum;
-						deliverToApp(packet.data);
-						printRec(0, 0, packet.data, packet.checksum, packet.seqnum, false, false);
-						backward.send(confirm);
-						return 0;
-					}
-					printRec(0, 0, packet.data, packet.checksum, packet.seqnum, false, true);
-					backward.send(confirm);
+				if(!packet.isCorrupt() && packet.seqnum.equals("0")){
+					deliverToApp(packet.data);
+					printRec(myState, 1, packet.data, packet.checksum, packet.seqnum, false, false);
+					backward.send(new Packet("ACK"));
 					return 1;
 				}
-				confirm = new Packet("NAK");
-				printRec(0, 0, packet.data, packet.checksum, packet.seqnum, true, false);
-				backward.send(confirm);
+				printRec(myState, 0, packet.data, packet.checksum, packet.seqnum, false, true);
+				backward.send(new Packet("NAK"));
 				return 0;
+
 			case 1:
 				dat = forward.receive();
 				packet = Packet.deserialize(dat);
-				if(!packet.isCorrupt()){
-					confirm = new Packet("ACK");
-					if(!seqNum.equals(packet.seqnum)){
-						seqNum = packet.seqnum;
-						deliverToApp(packet.data);
-						printRec(0, 0, packet.data, packet.checksum, packet.seqnum, false, false);
-						backward.send(confirm);
-						return 1;
-					}
-					printRec(0, 0, packet.data, packet.checksum, packet.seqnum, false, true);
-					backward.send(confirm);
+				if(!packet.isCorrupt() && packet.seqnum.equals("1")){
+					deliverToApp(packet.data);
+					printRec(myState, 0, packet.data, packet.checksum, packet.seqnum, false, false);
+					backward.send(new Packet("ACK"));
 					return 0;
 				}
-				confirm = new Packet("NAK");
-				printRec(0, 0, packet.data, packet.checksum, packet.seqnum, true, false);
-				backward.send(confirm);
+				printRec(myState, 1, packet.data, packet.checksum, packet.seqnum, false, true);
+				backward.send(new Packet("NAK"));
 				return 1;
 			}
 			return myState;
