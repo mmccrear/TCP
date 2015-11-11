@@ -112,14 +112,14 @@ public class RDT21 extends RTDBase {
 				dat = getFromApp(0);
 				packet = new Packet(dat, "0");
 				System.out.printf("Sender(%d): %s\n", myState, packet.toString());
-				System.out.printf(" **Sender(0->1) **\n");
+				System.out.printf(" **Sender(0->1)\n");
 				forward.send(packet);
 				return 1;
 			case 1:
 				backwardPacket = Packet.deserialize(backward.receive());
 				System.out.printf(" **Sender(%d): %s **\n", myState, backwardPacket.toString());
 				if(backwardPacket.data.equals("ACK") && !backwardPacket.isCorrupt()){
-					System.out.printf(" **Sender(1->2) **\n");
+					System.out.printf(" **Sender(1->2)\n");
 					return 2;
 				}
 				System.out.printf(" **Sender(1->1): NAK or corrupt acknowledgement; resending **\n", myState);
