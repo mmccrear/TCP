@@ -74,7 +74,7 @@ public class RDT22 extends RTDBase {
 				packet = new Packet(dat, "0");
 
 				System.out.printf("Sender(%d): %s\n", myState, packet.toString());
-				System.out.printf(" **Sender(0->1) **\n");
+				System.out.printf(" **Sender(0->1) \n");
 				//printSender(myState, 1, packet.data, packet.checksum, packet.seqnum);
 				forward.send(packet);
 				return 1;
