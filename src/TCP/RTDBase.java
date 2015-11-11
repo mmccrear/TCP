@@ -83,7 +83,7 @@ public abstract class RTDBase implements Runnable {
 
 		@Override
 		public abstract int loop(int myState) throws IOException;
-
+/*
 		public void printSender(int prevState, int nextState, String data, String checksum, String seqNum) {
 			System.out.printf("  **Sender(%d): %s (%s/%s) **\n",prevState, data, checksum, CkSum.genCheck(seqNum+data));
 			if (prevState == nextState) {
@@ -92,6 +92,7 @@ public abstract class RTDBase implements Runnable {
 				System.out.printf("  **Sender(%d->%d):\n", prevState, nextState);
 			}
 		}
+		*/
 	}
 	/**
 	 * Base class for all RReceiver Classes
@@ -104,7 +105,7 @@ public abstract class RTDBase implements Runnable {
 		}
 		@Override
 		public abstract int loop(int myState) throws IOException;
-
+/*
 		public void printRec(int prevState, int nextState, String data, String checksum, String seqNum, boolean error, boolean duplicate) {
 			System.out.printf("\t**Receiver(%d): %s %s (%s/%s) **\n",prevState, data, seqNum, checksum, CkSum.genCheck(seqNum+data));
 			if(duplicate){
@@ -118,7 +119,7 @@ public abstract class RTDBase implements Runnable {
 				}
 			}
 		}
-
+*/
 	}
 
 	/**

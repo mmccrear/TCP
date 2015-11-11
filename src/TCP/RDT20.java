@@ -62,18 +62,23 @@ public class RDT20 extends RTDBase {
 			case 0:
 				String dat = getFromApp(0);
 				packet = new Packet(dat);
+				System.out.printf("Sender(%d): %s\n", myState, packet.toString());
+				System.out.printf(" **Sender(0->1):\n");
 				forward.send(packet);
-				printSender(myState, 1, packet.data, packet.checksum,"");
+				//printSender(myState, 1, packet.data, packet.checksum,"");
 				return 1;
 				
 			case 1: 
 				Packet backwardPacket = Packet.deserialize(backward.receive());
+				System.out.printf(" **Sender(%d): %s ***\n", myState, backwardPacket.toString());
 				if(backwardPacket.data.equals("ACK") && !backwardPacket.isCorrupt()){
-					printSender(myState, 0, backwardPacket.data, backwardPacket.checksum, "");
+					//printSender(myState, 0, backwardPacket.data, backwardPacket.checksum, "");
+					System.out.printf(" **Sender(1->0)\n");
 					return 0;
 				}
+				System.out.printf(" **Sender(1->1): NAK or corrupt acknowledgement; resending ***\n");
 				forward.send(packet);
-				printSender(myState, 1, backwardPacket.data, backwardPacket.checksum, "");
+				//printSender(myState, 1, backwardPacket.data, backwardPacket.checksum, "");
 				return 1;
 				
 			}
@@ -95,13 +100,16 @@ public class RDT20 extends RTDBase {
 			case 0:
 				String dat = forward.receive();
 				Packet packet = Packet.deserialize(dat);
+				System.out.printf("\t **Receiver(%d): %s **\n", myState, packet.toString());
 				if(!packet.isCorrupt()){
+					System.out.printf("\t **Receiver(0->0): ok data; replying ACK **\n");
 					deliverToApp(packet.data);
-					printRec(0, 0, packet.data, packet.checksum, "", false, false);
+					//printRec(0, 0, packet.data, packet.checksum, "", false, false);
 					backward.send(new Packet("ACK"));
 				}
 				else{
-					printRec(0, 0, packet.data, packet.checksum, "", true, false);
+					//printRec(0, 0, packet.data, packet.checksum, "", true, false);
+					System.out.printf("\t **Receiver(0->0): corrupt data; replying NAK **\n");
 					backward.send(new Packet("NAK"));
 				}
 				return 0;

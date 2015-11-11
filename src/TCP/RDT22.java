@@ -72,31 +72,42 @@ public class RDT22 extends RTDBase {
 			case 0:
 				dat = getFromApp(0);
 				packet = new Packet(dat, "0");
-				printSender(myState, 1, packet.data, packet.checksum, packet.seqnum);
+
+				System.out.printf("Sender(%d): %s\n", myState, packet.toString());
+				System.out.printf(" **Sender(0->1) **\n");
+				//printSender(myState, 1, packet.data, packet.checksum, packet.seqnum);
 				forward.send(packet);
 				return 1;
 			case 1:
 				backwardPacket = Packet.deserialize(backward.receive());
+				System.out.printf(" **Sender(%d): %s **\n", myState, backwardPacket.toString());
 				if(backwardPacket.data.equals("ACK") && !backwardPacket.isCorrupt() && backwardPacket.seqnum.equals("0")){
-					printSender(myState, 2, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+					//printSender(myState, 2, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+					System.out.printf(" **Sender(1->2)\n");
 					return 2;
 				}
-				printSender(myState, 1, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+				System.out.printf(" **Sender(1->1): wrong or corrupt acknowledgement; resending **\n", myState);
+				//printSender(myState, 1, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
 				forward.send(packet);
 				return 1;
 			case 2:
 				dat = getFromApp(0);
 				packet = new Packet(dat, "1");
-				printSender(myState, 3, packet.data, packet.checksum, packet.seqnum);
+				System.out.printf("Sender(%d): %s\n", myState, packet.toString());
+				System.out.printf(" **Sender(0->1)\n");
+				//printSender(myState, 3, packet.data, packet.checksum, packet.seqnum);
 				forward.send(packet);
 				return 3;
 			case 3:
 				backwardPacket = Packet.deserialize(backward.receive());
+				System.out.printf(" **Sender(%d): %s **\n", myState, backwardPacket.toString());
 				if(backwardPacket.data.equals("ACK") && !backwardPacket.isCorrupt() && backwardPacket.seqnum.equals("1")){
-					printSender(myState, 0, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+					//printSender(myState, 0, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+					System.out.printf(" **Sender(3->0)\n");
 					return 0;
 				}
-				printSender(myState, 3, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+				//printSender(myState, 3, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+				System.out.printf(" **Sender(3->3): wrong or corrupt acknowledgement; resending **\n", myState);
 				forward.send(packet);
 				return 3;
 			}
@@ -118,27 +129,44 @@ public class RDT22 extends RTDBase {
 			case 0: 
 				dat = forward.receive();
 				packet = Packet.deserialize(dat);
-				if(!packet.isCorrupt() && packet.seqnum.equals("0")){
-					printRec(0, 1, packet.data, packet.checksum, packet.seqnum, false, false);
+				System.out.printf("\t **Receiver(%d): %s **\n", myState, packet.toString());
+				if(!packet.isCorrupt()){
+					if(packet.seqnum.equals("1")){
+						System.out.printf("\t **Receiver(0->0): duplicate 1 packet; discarding; replying ACK/1 **\n");
+						backward.send(new Packet("ACK", "1"));
+						return 0;
+					}
+					//printRec(0, 1, packet.data, packet.checksum, packet.seqnum, false, false);
+					System.out.printf("\t **Receiver(0->1): ok 0 data; replying ACK/0 **\n");
 					deliverToApp(packet.data);
 					backward.send(new Packet("ACK", "0"));
 					return 1;
 				}
 
-				printRec(0, 0, packet.data, packet.checksum, packet.seqnum, true, false);
+				//printRec(0, 0, packet.data, packet.checksum, packet.seqnum, true, false);
+				System.out.printf("\t **Receiver(0->0): corrupt data; replying ACK/1 **\n");
 				backward.send(new Packet("ACK", "1"));
 				return 0;
+
 			case 1:
 				dat = forward.receive();
 				packet = Packet.deserialize(dat);
-				if(!packet.isCorrupt() && packet.seqnum.equals("1")){
-					printRec(1, 0, packet.data, packet.checksum, packet.seqnum, false, false);
+				System.out.printf("\t **Receiver(%d): %s **\n", myState, packet.toString());
+				if(!packet.isCorrupt()){
+					if(packet.seqnum.equals("0")){
+						System.out.printf("\t **Receiver(1->1): duplicate 0 packet; discarding; replying ACK/0 **\n");
+						backward.send(new Packet("ACK", "0"));
+						return 1;
+					}
+					//printRec(1, 0, packet.data, packet.checksum, packet.seqnum, false, false);
+					System.out.printf("\t **Receiver(1->0): ok 1 data; replying ACK/1 **\n");
 					deliverToApp(packet.data);
 					backward.send(new Packet("ACK", "1"));
 					return 0;
 				}
 
-				printRec(1, 1, packet.data, packet.checksum, packet.seqnum, true, false);
+				//printRec(1, 1, packet.data, packet.checksum, packet.seqnum, true, false);
+				System.out.printf("\t **Receiver(1->1): corrupt data; replying ACK/0 **\n");
 				backward.send(new Packet("ACK", "0"));
 				return 1;
 			}
