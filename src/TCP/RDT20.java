@@ -95,16 +95,14 @@ public class RDT20 extends RTDBase {
 			case 0:
 				String dat = forward.receive();
 				Packet packet = Packet.deserialize(dat);
-				if(packet.isCorrupt()){
-					Packet confirm = new Packet("ACK");
+				if(!packet.isCorrupt()){
 					deliverToApp(packet.data);
 					printRec(0, 0, packet.data, packet.checksum, "", false, false);
-					backward.send(confirm);
+					backward.send(new Packet("ACK"));
 				}
 				else{
-					Packet confirm = new Packet("NAK");
 					printRec(0, 0, packet.data, packet.checksum, "", true, false);
-					backward.send(confirm);
+					backward.send(new Packet("NAK"));
 				}
 				return 0;
 			}
