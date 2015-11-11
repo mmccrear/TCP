@@ -111,31 +111,35 @@ public class RDT21 extends RTDBase {
 			case 0:
 				dat = getFromApp(0);
 				packet = new Packet(dat, "0");
-				printSender(myState, 1, packet.data, packet.checksum, packet.seqnum);
+				System.out.printf("Sender(%d): %s\n", myState, packet.toString());
+				System.out.printf(" **Sender(0->1):\n");
 				forward.send(packet);
 				return 1;
 			case 1:
 				backwardPacket = Packet.deserialize(backward.receive());
+				System.out.printf(" **Sender(%d): %s\n", myState, backwardPacket.toString());
 				if(backwardPacket.data.equals("ACK") && !backwardPacket.isCorrupt()){
-					printSender(myState, 0, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+					System.out.printf(" **Sender(1->2)\n");
 					return 2;
 				}
-				printSender(myState, 1, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+				System.out.printf(" **Sender(1->1): NAK or corrupt acknowledgement; resending\n", myState);
+				//printSender(myState, 1, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
 				forward.send(packet);
 				return 1;
 			case 2:
 				dat = getFromApp(0);
 				packet = new Packet(dat, "1");
-				printSender(myState, 1, packet.data, packet.checksum, packet.seqnum);
+				System.out.printf("Sender(%d): %s\n", myState, packet.toString());
 				forward.send(packet);
 				return 3;
 			case 3:
 				backwardPacket = Packet.deserialize(backward.receive());
+				System.out.printf(" **Sender(%d): %s\n", myState, backwardPacket.toString());
 				if(backwardPacket.data.equals("ACK") && !backwardPacket.isCorrupt()){
-					printSender(myState, 0, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+					System.out.printf(" **Sender(3->0)\n");
 					return 0;
 				}
-				printSender(myState, 1, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
+				System.out.printf(" **Sender(3->3): NAK or corrupt acknowledgement; resending\n", myState);
 				forward.send(packet);
 				return 3;
 			}
@@ -157,26 +161,44 @@ public class RDT21 extends RTDBase {
 			case 0: 
 				dat = forward.receive();
 				packet = Packet.deserialize(dat);
-				if(!packet.isCorrupt() && packet.seqnum.equals("0")){
+				System.out.printf("\t ** Receiver(%d): %s\n", myState, packet.toString());
+				if(!packet.isCorrupt()){
+					if(packet.seqnum.equals("1")){
+						System.out.printf("\t ** Receiver(0->0): duplicate 1 packet; discarding; replying ACK **\n");
+						backward.send(new Packet("ACK"));
+						return 0;
+					}
+	
+					System.out.printf("\t ** Receiver(0->1): ok 0 data; replying ACK **\n");
 					deliverToApp(packet.data);
-					printRec(myState, 1, packet.data, packet.checksum, packet.seqnum, false, false);
+					//printRec(myState, 1, packet.data, packet.checksum, packet.seqnum, false, false);
 					backward.send(new Packet("ACK"));
 					return 1;
 				}
-				printRec(myState, 0, packet.data, packet.checksum, packet.seqnum, false, true);
+				//printRec(myState, 0, packet.data, packet.checksum, packet.seqnum, false, true);
+				System.out.printf("\t ** Receiver(0->0): corrupt data; replying NAK **\n");
 				backward.send(new Packet("NAK"));
 				return 0;
 
 			case 1:
 				dat = forward.receive();
 				packet = Packet.deserialize(dat);
-				if(!packet.isCorrupt() && packet.seqnum.equals("1")){
+				System.out.printf("\t ** Receiver(%d): %s\n", myState, packet.toString());
+				if(!packet.isCorrupt()){
+					if(packet.seqnum.equals("0")){
+						System.out.printf("\t ** Receiver(1->1): duplicate 0 packet; discarding; replying ACK **\n");
+						backward.send(new Packet("ACK"));
+						return 1;
+					}
+					System.out.printf("\t ** Receiver(1->0): ok 1 data; replying ACK **\n");
 					deliverToApp(packet.data);
-					printRec(myState, 0, packet.data, packet.checksum, packet.seqnum, false, false);
+					//printRec(myState, 0, packet.data, packet.checksum, packet.seqnum, false, false);
+					
 					backward.send(new Packet("ACK"));
 					return 0;
 				}
-				printRec(myState, 1, packet.data, packet.checksum, packet.seqnum, false, true);
+				System.out.printf("\t ** Receiver(1->1): ** corrupt data; replying NAK **\n");
+				//printRec(myState, 1, packet.data, packet.checksum, packet.seqnum, false, true);
 				backward.send(new Packet("NAK"));
 				return 1;
 			}
