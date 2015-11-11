@@ -12,7 +12,7 @@ import TCP.RTDBase.RSender;
  *
  */
 public class RDT22 extends RTDBase {
-	
+
 	/**
 	 * Constructs an RDT22 simulator with given munge factor
 	 * @param pmunge		probability of character errors
@@ -56,7 +56,7 @@ public class RDT22 extends RTDBase {
 			return new Packet(dat, seqnum, hex);
 		}
 	}
-	
+
 	/**
 	 * RSender Class implementing rdt2.2 protocol
 	 * @author rms
@@ -77,7 +77,7 @@ public class RDT22 extends RTDBase {
 				return 1;
 			case 1:
 				backwardPacket = Packet.deserialize(backward.receive());
-				if(backwardPacket.data.equals("ACK") && backwardPacket.checksum.equals(CkSum.genCheck(packet.seqnum+"ACK"))){
+				if(backwardPacket.data.equals("ACK") && backwardPacket.checksum.equals(CkSum.genCheck(packet.seqnum+"ACK")) && backwardPacket.seqnum.equals("0")){
 					printSender(myState, 2, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
 					return 2;
 				}
@@ -92,7 +92,7 @@ public class RDT22 extends RTDBase {
 				return 3;
 			case 3:
 				backwardPacket = Packet.deserialize(backward.receive());
-				if(backwardPacket.data.equals("ACK") && backwardPacket.checksum.equals(CkSum.genCheck(packet.seqnum+"ACK"))){
+				if(backwardPacket.data.equals("ACK") && backwardPacket.checksum.equals(CkSum.genCheck(packet.seqnum+"ACK")) && backwardPacket.seqnum.equals("1")){
 					printSender(myState, 0, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
 					return 0;
 				}
@@ -110,57 +110,43 @@ public class RDT22 extends RTDBase {
 	 *
 	 */
 	public class RReceiver22 extends RReceiver {
-		String seqNum="0";
-		String badSeqNum = "1";
 		@Override
 		public int loop(int myState) throws IOException {
 			String dat;
-			Packet packet, confirm;
+			Packet packet;
 			switch (myState) {
 			case 0: 
 				dat = forward.receive();
 				packet = Packet.deserialize(dat);
-				seqNum = packet.seqnum;
-				if(CkSum.checkString(packet.seqnum+packet.data, packet.checksum)){
-					confirm = new Packet("ACK", seqNum);
-					if(seqNum.equals(packet.seqnum)){
-						printRec(0, 1, packet.data, packet.checksum, packet.seqnum, false, false);
-						deliverToApp(packet.data);
-						backward.send(confirm);
-						seqNum="1";
-						badSeqNum="0";
-						return 1;
-					}
+				if(CkSum.checkString(packet.seqnum+packet.data, packet.checksum) && packet.seqnum.equals("0")){
+					printRec(0, 1, packet.data, packet.checksum, packet.seqnum, false, false);
+					deliverToApp(packet.data);
+					backward.send(new Packet("ACK", "0"));
+					return 1;
 				}
-				confirm = new Packet("ACK", badSeqNum);
+
 				printRec(0, 0, packet.data, packet.checksum, packet.seqnum, true, false);
-				backward.send(confirm);
+				backward.send(new Packet("ACK", "1"));
 				return 0;
 			case 1:
 				dat = forward.receive();
 				packet = Packet.deserialize(dat);
-				seqNum = packet.seqnum;
-				if(CkSum.checkString(packet.seqnum+packet.data, packet.checksum)){
-					confirm = new Packet("ACK", seqNum);
-					if(seqNum.equals(packet.seqnum)){
-						printRec(1, 0, packet.data, packet.checksum, packet.seqnum, false, false);
-						deliverToApp(packet.data);
-						backward.send(confirm);
-						seqNum="0";
-						badSeqNum="1";
-						return 0;
-					}
+				if(CkSum.checkString(packet.seqnum+packet.data, packet.checksum) && packet.seqnum.equals("1")){
+					printRec(1, 0, packet.data, packet.checksum, packet.seqnum, false, false);
+					deliverToApp(packet.data);
+					backward.send(new Packet("ACK", "0"));
+					return 0;
 				}
-				confirm = new Packet("ACK", badSeqNum);
+
 				printRec(1, 1, packet.data, packet.checksum, packet.seqnum, true, false);
-				backward.send(confirm);
+				backward.send(new Packet("ACK", "1"));
 				return 1;
 			}
 			return myState;
 		}
 	}
 
-	
+
 	/**
 	 * Runs rdt2.2 simulation
 	 * @param args	[-m pmunge][-l ploss][-f filename]
@@ -171,5 +157,5 @@ public class RDT22 extends RTDBase {
 		RDT22 rdt22 = new RDT22((Double)pargs[0], (Double)pargs[1], (String)pargs[3]);
 		rdt22.run();
 	}
-	
+
 }
