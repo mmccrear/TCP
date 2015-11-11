@@ -116,7 +116,7 @@ public class RDT21 extends RTDBase {
 				return 1;
 			case 1:
 				backwardPacket = Packet.deserialize(backward.receive());
-				if(backwardPacket.data.equals("ACK") && backwardPacket.checksum.equals(CkSum.genCheck(" "+"ACK"))){
+				if(backwardPacket.data.equals("ACK") && !backwardPacket.isCorrupt()){
 					printSender(myState, 0, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
 					return 2;
 				}
@@ -131,7 +131,7 @@ public class RDT21 extends RTDBase {
 				return 3;
 			case 3:
 				backwardPacket = Packet.deserialize(backward.receive());
-				if(backwardPacket.data.equals("ACK") && backwardPacket.checksum.equals(CkSum.genCheck(" ACK"))){
+				if(backwardPacket.data.equals("ACK") && !backwardPacket.isCorrupt()){
 					printSender(myState, 0, backwardPacket.data, backwardPacket.checksum, backwardPacket.seqnum);
 					return 0;
 				}
@@ -158,7 +158,7 @@ public class RDT21 extends RTDBase {
 			case 0: 
 				dat = forward.receive();
 				packet = Packet.deserialize(dat);
-				if(CkSum.checkString(packet.seqnum+packet.data, packet.checksum)){
+				if(!packet.isCorrupt()){
 					confirm = new Packet("ACK");
 					if(!seqNum.equals(packet.seqnum)){
 						seqNum = packet.seqnum;
@@ -178,7 +178,7 @@ public class RDT21 extends RTDBase {
 			case 1:
 				dat = forward.receive();
 				packet = Packet.deserialize(dat);
-				if(CkSum.checkString(packet.seqnum+packet.data, packet.checksum)){
+				if(!packet.isCorrupt()){
 					confirm = new Packet("ACK");
 					if(!seqNum.equals(packet.seqnum)){
 						seqNum = packet.seqnum;
