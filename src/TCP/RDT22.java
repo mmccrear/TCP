@@ -134,12 +134,12 @@ public class RDT22 extends RTDBase {
 				if(!packet.isCorrupt() && packet.seqnum.equals("1")){
 					printRec(1, 0, packet.data, packet.checksum, packet.seqnum, false, false);
 					deliverToApp(packet.data);
-					backward.send(new Packet("ACK", "0"));
+					backward.send(new Packet("ACK", "1"));
 					return 0;
 				}
 
 				printRec(1, 1, packet.data, packet.checksum, packet.seqnum, true, false);
-				backward.send(new Packet("ACK", "1"));
+				backward.send(new Packet("ACK", "0"));
 				return 1;
 			}
 			return myState;
